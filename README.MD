@@ -1,6 +1,6 @@
 # spica-symlink
 
-A CLI tool to create symbolic links for folders in the Spica project, allowing display of human-readable titles instead of IDs instead of raw MongoDB ObjectIDs.
+A CLI tool to create symbolic links for folders in the Spica project, allowing display of human-readable titles instead of raw MongoDB ObjectIDs.
 
 ---
 
