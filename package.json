@@ -1,0 +1,21 @@
+{
+  "name": "spica-symlink",
+  "version": "1.0.1",
+  "description": "Symlink tool to replace folder IDs with readable titles in Spica.",
+  "bin": {
+    "spica-symlink": "./index.js"
+  },
+  "type": "module",
+  "main": "./index.js",
+  "license": "MIT",
+  "keywords": [
+    "cli",
+    "symlink",
+    "spica"
+  ],
+  "author": "Mavliut Fozliev",
+  "dependencies": {
+    "caporal": "^1.4.0",
+    "js-yaml": "^4.1.0"
+  }
+}
