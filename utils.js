@@ -1,14 +1,16 @@
 import fs from "fs";
 import path from "path";
 
-const rootPath = "../../GitHub/spica-fintech";
+export const getRootDir = (directoryPath) => path.join(process.cwd(), directoryPath);
 
-export const rootDir = path.join(process.cwd(), rootPath);
+export function isRootDirExist(directoryPath) {
+  return fs.existsSync(getRootDir(directoryPath));
+}
 
-const vscodeSettingsPath = path.join(rootDir, ".vscode", "settings.json");
+const getVScodeSettingsPath = (directoryPath) => path.join(getRootDir(directoryPath), ".vscode", "settings.json");
 
-const gitPath = path.join(rootDir, ".git");
-const gitExcludePath = path.join(gitPath, "info", "exclude");
+const getGitPath = (directoryPath) => path.join(getRootDir(directoryPath), ".git");
+const getGitExcludePath = (directoryPath) => path.join(getGitPath(directoryPath), "info", "exclude");
 
 export function sanitize(str) {
   return str.replace(/[^\w\s-]/g, "").replace(/\s+/g, "_");
@@ -18,33 +20,41 @@ export function getDivider() {
   return process.platform === "win32" ? "/" : "\\";
 }
 
-export function loadSettings() {
-  if (!fs.existsSync(vscodeSettingsPath)) return {};
+export function isSettingsExist(directoryPath) {
+  return fs.existsSync(getVScodeSettingsPath(directoryPath));
+}
+
+export function loadSettings(directoryPath) {
+  if (!fs.existsSync(getVScodeSettingsPath(directoryPath))) return {};
   try {
-    return JSON.parse(fs.readFileSync(vscodeSettingsPath, "utf8"));
+    return JSON.parse(fs.readFileSync(getVScodeSettingsPath(directoryPath), "utf8"));
   } catch (err) {
     console.warn("Warning: Failed to parse .vscode/settings.json");
     return {};
   }
 }
 
-export function saveSettings(settings) {
-  fs.writeFileSync(vscodeSettingsPath, JSON.stringify(settings, null, 2));
+export function saveSettings(settings, directoryPath) {
+  fs.writeFileSync(getVScodeSettingsPath(directoryPath), JSON.stringify(settings, null, 2));
 }
 
-export function isGitExist() {
-  return fs.existsSync(gitPath);
+export function isGitExist(directoryPath) {
+  return fs.existsSync(getGitPath(directoryPath));
 }
 
-export function loadGitExclude() {
-  if (!fs.existsSync(gitExcludePath)) return "";
+export function isGitExcludeExist(directoryPath) {
+  return fs.existsSync(getGitExcludePath(directoryPath));
+}
+
+export function loadGitExclude(directoryPath) {
+  if (!fs.existsSync(getGitExcludePath(directoryPath))) return "";
   try {
-    return fs.readFileSync(gitExcludePath, "utf8");
+    return fs.readFileSync(getGitExcludePath(directoryPath), "utf8");
   } catch {
     return "";
   }
 }
 
-export function saveGitExclude(content) {
-  fs.writeFileSync(gitExcludePath, content);
+export function saveGitExclude(content, directoryPath) {
+  fs.writeFileSync(getGitExcludePath(directoryPath), content);
 }

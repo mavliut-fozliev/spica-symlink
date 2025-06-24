@@ -1,13 +1,13 @@
 import fs from "fs";
 import path from "path";
 import yaml from "js-yaml";
-import { loadSettings, saveSettings, loadGitExclude, saveGitExclude, rootDir, getDivider, isGitExist, sanitize } from "./utils.js";
+import { loadSettings, saveSettings, loadGitExclude, saveGitExclude, getRootDir, getDivider, isGitExist, sanitize, isRootDirExist } from "./utils.js";
 
-function getAvailableName(baseName) {
+function getAvailableName(baseName, directoryPath) {
   let name = baseName;
   let counter = 1;
 
-  while (fs.existsSync(path.join(rootDir, name))) {
+  while (fs.existsSync(path.join(getRootDir(directoryPath), name))) {
     name = `${baseName}_${counter}`;
     counter++;
   }
@@ -21,8 +21,8 @@ function isValidObjectId(name) {
 const settingsDirsToExclude = new Set();
 const gitIgnoreDirsToAdd = new Set();
 
-function createSymlinks(module) {
-  const modulePath = path.join(rootDir, module);
+function createSymlinks(module, directoryPath) {
+  const modulePath = path.join(getRootDir(directoryPath), module);
   if (!fs.existsSync(modulePath)) return;
 
   const folders = fs.readdirSync(modulePath);
@@ -42,7 +42,7 @@ function createSymlinks(module) {
       if (!schema[titleField]) continue;
 
       const safeTitle = sanitize(schema[titleField]);
-      const finalTitle = getAvailableName(safeTitle);
+      const finalTitle = getAvailableName(safeTitle, directoryPath);
       const linkPath = path.join(modulePath, finalTitle);
 
       gitIgnoreDirsToAdd.add(module + getDivider() + finalTitle);
@@ -59,16 +59,16 @@ function createSymlinks(module) {
   }
 }
 
-function updateSettings() {
+function updateSettings(directoryPath) {
   if (settingsDirsToExclude.size < 1) return;
 
-  const vscodeDir = path.join(rootDir, ".vscode");
+  const vscodeDir = path.join(getRootDir(directoryPath), ".vscode");
 
   if (!fs.existsSync(vscodeDir)) {
     fs.mkdirSync(vscodeDir);
   }
 
-  let settings = loadSettings();
+  let settings = loadSettings(directoryPath);
 
   settings["files.exclude"] = settings["files.exclude"] || {};
 
@@ -76,23 +76,27 @@ function updateSettings() {
     settings["files.exclude"][`**/${dir}`] = true;
   }
 
-  saveSettings(settings);
+  saveSettings(settings, directoryPath);
 }
 
-function updateGitExclude() {
-  if (gitIgnoreDirsToAdd.size < 1 || !isGitExist()) return;
+function updateGitExclude(directoryPath) {
+  if (gitIgnoreDirsToAdd.size < 1 || !isGitExist(directoryPath)) return;
 
   const allFolders = Array.from(gitIgnoreDirsToAdd).join("\n");
 
-  const prevContent = loadGitExclude();
+  const prevContent = loadGitExclude(directoryPath);
   const content = prevContent + "\n" + allFolders + "\n.vscode/";
 
-  saveGitExclude(content);
+  saveGitExclude(content, directoryPath);
 }
 
-export function create() {
-  createSymlinks("bucket");
-  createSymlinks("function");
-  updateSettings();
-  updateGitExclude();
+export function create(directoryPath) {
+  if (!isRootDirExist(directoryPath)) {
+    throw new Error("The provided path does not exist");
+  }
+
+  createSymlinks("bucket", directoryPath);
+  createSymlinks("function", directoryPath);
+  updateSettings(directoryPath);
+  updateGitExclude(directoryPath);
 }

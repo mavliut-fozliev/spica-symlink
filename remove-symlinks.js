@@ -1,16 +1,24 @@
 import fs from "fs";
 import path from "path";
 import yaml from "js-yaml";
-import { loadSettings, saveSettings, loadGitExclude, saveGitExclude, rootDir, sanitize, getDivider } from "./utils.js";
-
-const vscodeSettingsPath = path.join(rootDir, ".vscode", "settings.json");
-const gitExcludePath = path.join(rootDir, ".git", "info", "exclude");
+import {
+  loadSettings,
+  saveSettings,
+  loadGitExclude,
+  saveGitExclude,
+  getRootDir,
+  sanitize,
+  getDivider,
+  isSettingsExist,
+  isGitExcludeExist,
+  isRootDirExist,
+} from "./utils.js";
 
 const settingsDirsToUnexclude = new Set();
 const gitIgnoreDirsToRemove = new Set();
 
-function removeSymlinks(module) {
-  const modulePath = path.join(rootDir, module);
+function removeSymlinks(module, directoryPath) {
+  const modulePath = path.join(getRootDir(directoryPath), module);
   if (!fs.existsSync(modulePath)) return;
 
   const items = fs.readdirSync(modulePath);
@@ -50,10 +58,10 @@ function removeSymlinks(module) {
   }
 }
 
-function updateSettings() {
-  if (settingsDirsToUnexclude.size < 1 || !fs.existsSync(vscodeSettingsPath)) return;
+function updateSettings(directoryPath) {
+  if (settingsDirsToUnexclude.size < 1 || !isSettingsExist(directoryPath)) return;
 
-  const settings = loadSettings();
+  const settings = loadSettings(directoryPath);
   const excludes = settings["files.exclude"] || {};
 
   for (const dir of settingsDirsToUnexclude) {
@@ -65,13 +73,13 @@ function updateSettings() {
   }
 
   settings["files.exclude"] = excludes;
-  saveSettings(settings);
+  saveSettings(settings, directoryPath);
 }
 
-function updateGitExclude() {
-  if (gitIgnoreDirsToRemove.size < 1 || !fs.existsSync(gitExcludePath)) return;
+function updateGitExclude(directoryPath) {
+  if (gitIgnoreDirsToRemove.size < 1 || !isGitExcludeExist(directoryPath)) return;
 
-  const content = loadGitExclude();
+  const content = loadGitExclude(directoryPath);
 
   const lines = content.split(/\r?\n/).filter((line) => {
     const trimmed = line.trim();
@@ -82,12 +90,16 @@ function updateGitExclude() {
     return true;
   });
 
-  saveGitExclude(lines.join("\n"));
+  saveGitExclude(lines.join("\n"), directoryPath);
 }
 
-export function remove() {
-  removeSymlinks("bucket");
-  removeSymlinks("function");
-  updateSettings();
-  updateGitExclude();
+export function remove(directoryPath) {
+  if (!isRootDirExist(directoryPath)) {
+    throw new Error("The provided path does not exist");
+  }
+
+  removeSymlinks("bucket", directoryPath);
+  removeSymlinks("function", directoryPath);
+  updateSettings(directoryPath);
+  updateGitExclude(directoryPath);
 }
