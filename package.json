@@ -1,6 +1,6 @@
 {
   "name": "spica-symlink",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "description": "Symlink tool to replace folder IDs with readable titles in Spica.",
   "bin": {
     "spica-symlink": "./index.js"
