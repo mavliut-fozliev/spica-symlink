@@ -4,7 +4,7 @@ import program from "caporal";
 import { create } from "./create-symlinks.js";
 import { remove } from "./remove-symlinks.js";
 
-program.name("spica-symlink").version("1.0.5").description("Symlink tool to replace folder IDs with readable titles in Spica.");
+program.name("spica-symlink").version("1.1.1").description("Symlink tool to replace folder IDs with readable titles in Spica.");
 
 program
   .command("create", "Generate symlinks for folders to display readable titles")

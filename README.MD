@@ -19,8 +19,9 @@ spica-symlink create <path>
 # Example:
 spica-symlink create ./resources
 
-# → Creates symbolic links inside ./resources/function and ./resources/bucket
-#    using titles from each folder's schema.yaml
+# → Creates separate directories ./resources/bucket_link and ./resources/function_link
+#    and places symbolic links inside them for each subfolder of "bucket" and "function",
+#    using titles from schema.yaml in each subfolder.
 ```
 
 ```bash
