@@ -1,75 +1,25 @@
 import fs from "fs";
 import path from "path";
-import yaml from "js-yaml";
-import {
-  loadSettings,
-  saveSettings,
-  loadGitExclude,
-  saveGitExclude,
-  getRootDir,
-  sanitize,
-  getDivider,
-  isSettingsExist,
-  isGitExcludeExist,
-  isRootDirExist,
-} from "./utils.js";
-
-const settingsDirsToUnexclude = new Set();
-const gitIgnoreDirsToRemove = new Set();
+import { loadSettings, saveSettings, loadGitExclude, saveGitExclude, getRootDir, isSettingsExist, isGitExcludeExist, isRootDirExist } from "./utils.js";
 
 function removeSymlinks(module, directoryPath) {
-  const modulePath = path.join(getRootDir(directoryPath), module);
-  if (!fs.existsSync(modulePath)) return;
+  const moduleLinkPath = path.join(getRootDir(directoryPath), `${module}_link`);
+  if (!fs.existsSync(moduleLinkPath)) return;
 
-  const items = fs.readdirSync(modulePath);
-
-  for (const item of items) {
-    const itemPath = path.join(modulePath, item);
-
-    try {
-      const stat = fs.lstatSync(itemPath);
-      if (!stat.isSymbolicLink()) continue;
-
-      const targetPath = fs.readlinkSync(itemPath);
-      const absoluteTarget = path.resolve(modulePath, targetPath);
-      const schemaPath = path.join(absoluteTarget, "schema.yaml");
-
-      if (!fs.existsSync(schemaPath)) continue;
-
-      const schema = yaml.load(fs.readFileSync(schemaPath, "utf8"));
-      if (!schema) continue;
-
-      const titleField = module === "function" ? "name" : "title";
-      if (!schema[titleField]) continue;
-
-      const baseTitle = sanitize(schema[titleField]);
-      if (item !== baseTitle && !item.startsWith(`${baseTitle}_`)) continue;
-
-      fs.unlinkSync(itemPath);
-      console.log(`Removed symlink: ${item}`);
-
-      const folderName = path.basename(absoluteTarget);
-      settingsDirsToUnexclude.add(folderName);
-
-      gitIgnoreDirsToRemove.add(module + getDivider() + baseTitle);
-    } catch (err) {
-      console.warn(`Failed to process ${item}:`, err.message);
-    }
-  }
+  fs.rmSync(moduleLinkPath, { recursive: true, force: true });
 }
 
 function updateSettings(directoryPath) {
-  if (settingsDirsToUnexclude.size < 1 || !isSettingsExist(directoryPath)) return;
+  if (!isSettingsExist(directoryPath)) return;
 
   const settings = loadSettings(directoryPath);
   const excludes = settings["files.exclude"] || {};
 
-  for (const dir of settingsDirsToUnexclude) {
-    const key = `**/${dir}`;
-    if (key in excludes) {
-      delete excludes[key];
-      console.log(`Unexcluded folder: ${dir}`);
-    }
+  if ("bucket" in excludes) {
+    delete excludes["bucket"];
+  }
+  if ("function" in excludes) {
+    delete excludes["function"];
   }
 
   settings["files.exclude"] = excludes;
@@ -77,17 +27,14 @@ function updateSettings(directoryPath) {
 }
 
 function updateGitExclude(directoryPath) {
-  if (gitIgnoreDirsToRemove.size < 1 || !isGitExcludeExist(directoryPath)) return;
+  if (!isGitExcludeExist(directoryPath)) return;
 
   const content = loadGitExclude(directoryPath);
 
   const lines = content.split(/\r?\n/).filter((line) => {
     const trimmed = line.trim();
-    if (gitIgnoreDirsToRemove.has(trimmed) || trimmed === ".vscode/") {
-      console.log(`Removed from git exclude: ${trimmed}`);
-      return false;
-    }
-    return true;
+    const linesToDelete = ["bucket_link", "function_link", ".vscode"];
+    return !linesToDelete.includes(trimmed);
   });
 
   saveGitExclude(lines.join("\n"), directoryPath);

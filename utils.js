@@ -16,10 +16,6 @@ export function sanitize(str) {
   return str.replace(/[^\w\s-]/g, "").replace(/\s+/g, "_");
 }
 
-export function getDivider() {
-  return process.platform === "win32" ? "/" : "\\";
-}
-
 export function isSettingsExist(directoryPath) {
   return fs.existsSync(getVScodeSettingsPath(directoryPath));
 }
